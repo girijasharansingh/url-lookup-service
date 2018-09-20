@@ -7,10 +7,16 @@ We have an HTTP proxy that is scanning traffic looking for malware URL's. Before
 We have to create a small web service, that responds to GET requests, where the caller passes in a URL and the service responds with some information about that URL.
 The GET requests would look like this:
 
-`GET /urlinfo/1/{hostname_and_port}/{original_path_and_query_string}`
+`GET http://<IP>:<port>/api/v1/check/url?url=<original_url_to_lookup_for>`
+
+`Ex: http://127.0.0.1:5000/api/v1/check/url?url=dummy.com`
 
 Solution Implemented:
-
+```markdown
+The following API server has been implemented in Python 3.6.5 using Flask library.
+For backend storage, MySQL database has been used.
+Once the API server started, its create connection to the MySQL database and for subsequent GET requests, it uses this same connection.
+```
 Pre-requisites:
 
 - This service is intended to run `Ubuntu 18.04`
@@ -18,6 +24,10 @@ Pre-requisites:
 - Install Python : `sudo apt install python3`
 
 - Install pip : `sudo apt install python3-pip`
+
+- Install flask module : `pip3 install flask`
+
+- Install mysql-connector-python module : `pip3 install mysql-connector-python`
 
 - Install and configure MySQL database :
 ```markdown
@@ -42,6 +52,10 @@ Procedure to use it:
 - Clone this repository.
 - `cd url-lookup-service/`
 - Update `config.ini` according to your environment.
+- Run API server using : `python3 url_lookup_server.py`
+- Go to the Browser and pass URL : `http://127.0.0.1:5000/`
+- Your server is up and running.
+- To stop the server press `Ctrl+C` on the same terminal.
 
 References:
 ```markdown
