@@ -57,6 +57,14 @@ Procedure to use it:
 - Your server is up and running.
 - To stop the server press `Ctrl+C` on the same terminal.
 
+Enhancement Scope:
+
+- Need to handle the load. May use Kubernetes to scale up/down depending on the incoming traffic load.
+- Need to make backend database interface generic. Can be made plugable, and depending on the type it will pick up the right interface.
+- Also, connection to database can be made in pool so that multiple request execution can be handled.
+- The result parsing logic needs to be optimised, be it at database level or in the server code.
+- Needs to have a separate service which update malware information in the databases.
+
 References:
 ```markdown
 https://www.digitalocean.com/community/tutorials/how-to-install-mysql-on-ubuntu-18-04
