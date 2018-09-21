@@ -13,6 +13,28 @@ db = DBOperations(config["mysql"]["host"], config["mysql"]["port"],
 db_connection = db.connect(config["mysql"]["db"])
 
 
+class ResponseMessage(Exception):
+    """ Defining our own exception class to pass sensible response messages """
+    def __init__(self, message, status_code=None, payload=None):
+        Exception.__init__(self)
+        self.message = message
+        if status_code is not None:
+            self.status_code = status_code
+        self.payload = payload
+
+    def to_dict(self):
+        rv = dict(self.payload or ())
+        rv["message"] = self.message
+        return rv
+
+
+@app.errorhandler(ResponseMessage)
+def handle_invalid_usage(error):
+    response = jsonify(error.to_dict())
+    response.status_code = error.status_code
+    return response
+
+
 @app.route("/", methods=["GET"])
 def home_page():
     """ To display Home page """
@@ -29,37 +51,53 @@ def check_url():
     result["type"] = "Normal"
     if "url" in request.args:
         url = request.args["url"]
-        # return 414 (Request-URI too long) status code.
         if len(url) > 2000:
-            return jsonify(result)
+            # return 414 (Request-URI too long) status code.
+            msg = "URL requested is too long."
+            app.logger.error(msg)
+            raise ResponseMessage(msg, status_code=414, payload={"url": url})
+        if not url:
+            # return 400 (Bad request) status code.
+            msg = "URL value is missing."
+            app.logger.error(msg)
+            raise ResponseMessage(msg, status_code=400, payload={"url": url})
         result["url"] = url
     else:
-        app.logger.error("No url field provided. Please specify an url.")
         # return 400 (Bad request) status code.
-        return jsonify(result)
+        msg = "No url field provided. Please specify an url."
+        app.logger.error(msg)
+        raise ResponseMessage(msg, status_code=400)
 
     if not db_connection:
         # return 500 (Server error) status code.
-        return jsonify(result)
+        msg = "Connection to database failed."
+        app.logger.error(msg)
+        raise ResponseMessage(msg, status_code=500, payload={"url": url})
 
     sql_query = "select * from {}".format(config["mysql"]["table"])
     query_res = db.execute(db_connection, sql_query)
     if not query_res:
         # return 500 (Server error) status code.
-        return jsonify(result)
+        msg = "Failed to retrieve data from database."
+        app.logger.error(msg)
+        raise ResponseMessage(msg, status_code=500, payload={"url": url})
+
     app.logger.debug("Result from MySQL : {}".format(query_res))
     for row in query_res:
         if url in row:
             result["type"] = "Malware"
-            app.logger.error("Requested URL is a malware !!")
-            break
+            # return 200 (Success/Ok) status code.
+            msg = "Requested URL is a malware."
+            app.logger.error(msg)
+            raise ResponseMessage(msg, status_code=200, payload=result)
 
     # return 200 (Success/Ok) status code.
-    return jsonify(result)
+    msg = "Requested URL is not a malware."
+    app.logger.debug(msg)
+    raise ResponseMessage(msg, status_code=200, payload=result)
 
 
 if __name__ == "__main__":
     app.run(host=config["default"]["service_ip"],
             port=config["default"]["service_port"],
             debug=config["default"]["service_log_debug"])
-    # TODO: Add code to close DB connection once the app is stopped.
